@@ -36,7 +36,7 @@ async def start_command(message : types.Message):
                                         InlineKeyboardButton("Я на гит хабе", url="https://github.com/IUDA194/harakiriii_bot"),
                                         InlineKeyboardButton("Мой сайт", url="naeb.online"))
         await bot.send_message(message.chat.id, "Привет, я бот харакири! Подробности отправил в лс")
-        await bot.send_message(message.from_user.id, "Привет, я бот написанный @iuda194 за 3 часа что-бы предотвратить спам")
+        await bot.send_photo(message.from_user.id, open("img.jpg", "rb") ,"Привет, я бот написанный @iuda194 за 3 часа что-бы предотвратить спам")
         await asyncio.sleep(2)
         await bot.send_message(message.from_user.id, "Если хочешь добавить меня в группу напиши моему создвтелю в лс, так же можешь сам склонить мой проект с гита", reply_markup=kb)
     elif message.chat.type == "private":
@@ -44,7 +44,7 @@ async def start_command(message : types.Message):
         kb = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton("Личка создателя", url="https://t.me/iuda194"),
                                         InlineKeyboardButton("Я на гит хабе", url="https://github.com/IUDA194/harakiriii_bot"),
                                         InlineKeyboardButton("Мой сайт", url="naeb.online"))
-        await bot.send_message(message.from_user.id, "Привет, я бот написанный @iuda194 за 3 часа что-бы предотвратить спам")
+        await bot.send_photo(message.from_user.id, open("img.jpg", "rb") ,"Привет, я бот написанный @iuda194 за 3 часа что-бы предотвратить спам")
         await asyncio.sleep(2)
         await bot.send_message(message.from_user.id, "Если хочешь добавить меня в группу напиши моему создвтелю в лс, так же можешь сам склонить мой проект с гита", reply_markup=kb)
 
