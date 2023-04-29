@@ -1,6 +1,7 @@
 #Импорты
 import asyncio
 import sqlite3 as sql
+import random
 
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher import FSMContext
@@ -16,6 +17,7 @@ from aiogram.types.input_file import InputFile
 from aiogram.types.message import ContentType
 
 from config import TOKEN
+import config
 from db import DataBase
 import datetime
 
@@ -53,6 +55,50 @@ async def start_command(message : types.Message):
     if message.chat.type == "private":
         if message.chat.id == 687899499:
             await bot.send_message(687899499, "Админка", reply_markup=admin_kb)
+
+@dp.message_handler(commands=['mute', "мут"], is_chat_admin=True)
+async def mute(message : types.Message):
+    if message.chat.type != "private":
+        #if message.from_user.id == 687899499:
+        if not message.reply_to_message:
+            await message.reply("Эта команда должна быть ответом на сообщение!")
+            return
+        try:
+            mute_text = config.muts_texts[random.randrange(0, len(config.muts_texts))]
+            muteint = int(message.text.split()[1])
+            mutetype = message.text.split()[2]
+            comment = " ".join(message.text.split()[3:])
+        except IndexError:
+            mute_text = config.muts_texts[random.randrange(0, len(config.muts_texts))]
+            muteint = 240
+            mutetype = "m"
+            comment = " ".join(message.text.split()[3:])
+        if mutetype == "ч" or mutetype == "часов" or mutetype == "час":
+            dt = datetime.datetime.now() + datetime.timedelta(hours=muteint)
+            timestamp = dt.timestamp()
+            await bot.restrict_chat_member(message.chat.id, message.reply_to_message.from_user.id, types.ChatPermissions(False), until_date = timestamp)
+            await message.reply(mute_text)
+        elif mutetype == "м" or mutetype == "минут" or mutetype == "минуты" or mutetype == "m":
+            dt = datetime.datetime.now() + datetime.timedelta(minutes=muteint)
+            timestamp = dt.timestamp()
+            await bot.restrict_chat_member(message.chat.id, message.reply_to_message.from_user.id, types.ChatPermissions(False), until_date = timestamp)
+            await message.reply(mute_text)
+        elif mutetype == "д" or mutetype == "дней" or mutetype == "день":
+            dt = datetime.datetime.now() + datetime.timedelta(days=muteint)
+            timestamp = dt.timestamp()
+            await bot.restrict_chat_member(message.chat.id, message.reply_to_message.from_user.id, types.ChatPermissions(False), until_date = timestamp)
+            await message.reply(mute_text)
+
+@dp.message_handler(commands=['unmute', "анмут"], is_chat_admin=True)
+async def mute(message : types.Message):
+    if message.chat.type != "private":
+        #if message.from_user.id == 687899499:
+        if not message.reply_to_message:
+            await message.reply("Эта команда должна быть ответом на сообщение!")
+            return
+        await bot.restrict_chat_member(message.chat.id, message.reply_to_message.from_user.id, types.ChatPermissions(True))
+        await message.reply(config.unmuts_texts[random.randrange(0, len(config.muts_texts))])
+
 
 @dp.callback_query_handler(text="add_ban_word")
 async def process_buy_command(callback_query: types.CallbackQuery):
