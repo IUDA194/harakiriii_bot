@@ -22,7 +22,7 @@ from db import DataBase
 import datetime
 
 #Модель бота и клас диспетчер
-bot = Bot(token=TOKEN)
+bot = Bot(token=TOKEN, parse_mode="HTML")
 dp = Dispatcher(bot, storage=MemoryStorage())
 
 admin_kb = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton("add_ban_word", callback_data="add_ban_word"),
@@ -99,6 +99,18 @@ async def mute(message : types.Message):
         await bot.restrict_chat_member(message.chat.id, message.reply_to_message.from_user.id, types.ChatPermissions(True))
         await message.reply(config.unmuts_texts[random.randrange(0, len(config.muts_texts))])
 
+@dp.message_handler(commands=["команды"])
+async def mute(message : types.Message):
+    kb = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton("Личка создателя", url="https://t.me/iuda194"))
+    if message.chat.type != "private":
+        a = await bot.get_chat_member(message.chat.id, message.from_user.id)
+        if a['status'] == "creator" or a['status'] == "administrator":
+            await message.reply("Поведал в личке)")
+            await bot.send_message(message.from_user.id, config.text_command, reply_markup=kb)
+        else:
+            await message.reply("У тебя нет прав бро)")
+    else:
+        await bot.send_message(message.from_user.id, config.text_command,reply_markup=kb)
 
 @dp.callback_query_handler(text="add_ban_word")
 async def process_buy_command(callback_query: types.CallbackQuery):
