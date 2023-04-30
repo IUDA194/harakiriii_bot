@@ -124,14 +124,12 @@ async def start_command(message : types.Message, state: FSMContext):
     await state.finish()
 
 async def anti_flood(*args, **kwargs):
-    m = args[0]
-    #тут будет то, что нужно при флуде.
-    await m.answer("Ф для спамеров")
+    message = args[0] 
+    message : types.Message
+    dt = datetime.datetime.now() + datetime.timedelta(minutes=15) 
+    await bot.restrict_chat_member(message.chat.id, message.from_user.id, types.ChatPermissions(False), until_date = dt)
+    await message.reply("Нахуй флудить | Мут на 15 минут")
 
-@dp.message_handler(content_types=['text'])
-@dp.throttled(anti_flood, rate=1) #rate это количество секунд, при котором входящие сообщения считаются флудом.
-async def main(message: types.Message):
-    await message.answer(f"Да, норм сообщение")
 
 @dp.message_handler(content_types=ContentType.ANIMATION)
 async def start_command(message : types.Message):
@@ -147,6 +145,7 @@ async def start_command(message : types.Message):
                 DataBase.update_last_text(message.from_user.id, "GIF")
 
 @dp.message_handler()
+@dp.throttled(anti_flood, rate=0.5) #rate это количество секунд, при котором входящие сообщения считаются флудом.
 async def start_command(message : types.Message):
     if message.chat.type != "private":
         user_chat_data = await bot.get_chat_member(message.chat.id, message.from_user.id)
