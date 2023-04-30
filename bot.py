@@ -38,7 +38,7 @@ async def start_command(message : types.Message):
                                         InlineKeyboardButton("Я на гит хабе", url="https://github.com/IUDA194/harakiriii_bot"),
                                         InlineKeyboardButton("Мой сайт", url="naeb.online"))
         await bot.send_message(message.chat.id, "Привет, я бот харакири! Подробности отправил в лс")
-        await bot.send_photo(message.from_user.id, open("img.jpg", "rb") ,"Привет, я бот написанный @iuda194 за 3 часа что-бы предотвратить спам")
+        await bot.send_photo(message.from_user.id, open("img.jpg", "rb") ,"Привет, я бот написанный @iuda194 за 3 часа что-бы предотвратить спам, для списка всех моих команд введи /команды")
         await asyncio.sleep(2)
         await bot.send_message(message.from_user.id, "Если хочешь добавить меня в группу напиши моему создвтелю в лс, так же можешь сам склонить мой проект с гита", reply_markup=kb)
     elif message.chat.type == "private":
@@ -99,7 +99,7 @@ async def mute(message : types.Message):
         await bot.restrict_chat_member(message.chat.id, message.reply_to_message.from_user.id, types.ChatPermissions(True))
         await message.reply(config.unmuts_texts[random.randrange(0, len(config.muts_texts))])
 
-@dp.message_handler(commands=["команды"])
+@dp.message_handler(commands=["команды", "command"])
 async def mute(message : types.Message):
     kb = InlineKeyboardMarkup(row_width=1).add(InlineKeyboardButton("Личка создателя", url="https://t.me/iuda194"))
     if message.chat.type != "private":
@@ -123,51 +123,81 @@ async def start_command(message : types.Message, state: FSMContext):
     DataBase.insert_ban_word(message.text)
     await state.finish()
 
+async def anti_flood(*args, **kwargs):
+    m = args[0]
+    #тут будет то, что нужно при флуде.
+    await m.answer("Ф для спамеров")
+
+@dp.message_handler(content_types=['text'])
+@dp.throttled(anti_flood, rate=1) #rate это количество секунд, при котором входящие сообщения считаются флудом.
+async def main(message: types.Message):
+    await message.answer(f"Да, норм сообщение")
+
+@dp.message_handler(content_types=ContentType.ANIMATION)
+async def start_command(message : types.Message):
+    user_chat_data = await bot.get_chat_member(message.chat.id, message.from_user.id)
+    if user_chat_data['status'] != "creator" and user_chat_data['status'] != "administrator":
+        us_data = DataBase.select_user(message.from_user.id)
+        if len(us_data) >= 1:
+            if us_data["data"]["last_text"] == "GIF":
+                dt = datetime.datetime.now() + datetime.timedelta(hours=1) 
+                await bot.restrict_chat_member(message.chat.id, message.from_user.id, types.ChatPermissions(False), until_date = dt)
+                await message.reply("Нахуй гифки | Мут на час")
+            else:
+                DataBase.update_last_text(message.from_user.id, "GIF")
+
 @dp.message_handler()
 async def start_command(message : types.Message):
     if message.chat.type != "private":
-        try:
-            us_data = DataBase.select_user(message.from_user.id)
-            if len(us_data) >= 1:
-                ban_woeds = DataBase.select_ban_word()
-                for i in ban_woeds['ban_words']:
-                    if i[0] in message.text:
+        user_chat_data = await bot.get_chat_member(message.chat.id, message.from_user.id)
+        if user_chat_data['status'] != "creator" and user_chat_data['status'] != "administrator":
+            if len(message.text) <= 5:
+                await message.reply(f"@{message.from_user.username} У тебя что налог на буквы? | Отдохни 30 секунд")
+                dt = datetime.datetime.now() + datetime.timedelta(seconds=30)  
+                await bot.restrict_chat_member(message.chat.id, message.from_user.id, types.ChatPermissions(False), until_date = dt)
+                await message.delete()
+            try:
+                us_data = DataBase.select_user(message.from_user.id)
+                if len(us_data) >= 1:
+                    ban_woeds = DataBase.select_ban_word()
+                    for i in ban_woeds['ban_words']:
+                        if i[0] in message.text:
+                            DataBase.update_last_text(message.from_user.id, message.text)
+                            await message.delete()
+                            await bot.send_message(message.chat.id, f"@{message.from_user.username} | Твоё сообщение удалено, приоритет понижен на 1")
+                            DataBase.update_rep(message.from_user.id, -1)
+                    if us_data["data"]["last_text"] == message.text:
+                        status = DataBase.update_rep(message.from_user.id, -1)["status"]
+                        if status == True:
+                            pass
+                        elif status == False:
+                            dt = datetime.datetime.now() + datetime.timedelta(hours=6) 
+                            await bot.restrict_chat_member(message.chat.id, message.from_user.id, types.ChatPermissions(False), until_date = dt)
+                            await message.reply("В мут обезьяну | Мут на 6 часов")
+                    else:
+                        DataBase.update_rep(message.from_user.id, 1)
                         DataBase.update_last_text(message.from_user.id, message.text)
-                        await message.delete()
-                        await bot.send_message(message.chat.id, f"@{message.from_user.username} | Твоё сообщение удалено, приоритет понижен на 1")
-                        DataBase.update_rep(message.from_user.id, -1)
-                if us_data["data"]["last_text"] == message.text:
-                    status = DataBase.update_rep(message.from_user.id, -1)["status"]
-                    if status == True:
-                        pass
-                    elif status == False:
-                        dt = datetime.datetime.now() + datetime.timedelta(hours=6) 
-                        await bot.restrict_chat_member(message.chat.id, message.from_user.id, types.ChatPermissions(False), until_date = dt)
-                        await message.reply("В мут обезьяну | Мут на 6 часов")
                 else:
-                    DataBase.update_rep(message.from_user.id, 1)
-                    DataBase.update_last_text(message.from_user.id, message.text)
-            else:
-                DataBase.insert_user(message.from_user.id)
-                ban_woeds = DataBase.select_ban_word()
-                for i in ban_woeds['ban_words']:
-                    if i[0] in message.text:
+                    DataBase.insert_user(message.from_user.id)
+                    ban_woeds = DataBase.select_ban_word()
+                    for i in ban_woeds['ban_words']:
+                        if i[0] in message.text:
+                            DataBase.update_last_text(message.from_user.id, message.text)
+                            await message.delete()
+                            await bot.send_message(message.chat.id, f"@{message.from_user.username} | Твоё сообщение удалено, приоритет понижен на 1")
+                            DataBase.update_rep(message.from_user.id, -1)
+                    if us_data["data"]["last_text"] == message.text:
+                        status = DataBase.update_rep(message.from_user.id, -1)["status"]
+                        if status == True:
+                            pass
+                        elif status == False:
+                            dt = datetime.datetime.now() + datetime.timedelta(hours=6)  
+                            await bot.restrict_chat_member(message.chat.id, message.from_user.id, types.ChatPermissions(False), until_date = dt)
+                            await message.reply("В мут обезьяну | Мут на 6 часов")
+                    else:
+                        DataBase.update_rep(message.from_user.id, 1)
                         DataBase.update_last_text(message.from_user.id, message.text)
-                        await message.delete()
-                        await bot.send_message(message.chat.id, f"@{message.from_user.username} | Твоё сообщение удалено, приоритет понижен на 1")
-                        DataBase.update_rep(message.from_user.id, -1)
-                if us_data["data"]["last_text"] == message.text:
-                    status = DataBase.update_rep(message.from_user.id, -1)["status"]
-                    if status == True:
-                        pass
-                    elif status == False:
-                        dt = datetime.datetime.now() + datetime.timedelta(hours=6)  
-                        await bot.restrict_chat_member(message.chat.id, message.from_user.id, types.ChatPermissions(False), until_date = dt)
-                        await message.reply("В мут обезьяну | Мут на 6 часов")
-                else:
-                    DataBase.update_rep(message.from_user.id, 1)
-                    DataBase.update_last_text(message.from_user.id, message.text)
-        except: pass
+            except: pass
 
 #Функция которая запускается со стартом бота
 async def on_startup(_):

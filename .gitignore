@@ -1,2 +1,6 @@
 
 DataBase.db
+.DS_Store
+*.pyc
+__pycache__/config.cpython-311.pyc
+*.db

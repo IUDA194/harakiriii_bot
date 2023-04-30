@@ -49,8 +49,8 @@ class DataBase:
             cur.execute(""" UPDATE users SET rep = ? WHERE chat_id = ? """, (result + rep, chat_id))
             db.commit()
             return {"status" : True}
-        elif result + rep >= 3:
-            cur.execute(""" UPDATE users SET rep = ? WHERE chat_id = ? """, (3, chat_id))
+        elif result + rep >= 2:
+            cur.execute(""" UPDATE users SET rep = ? WHERE chat_id = ? """, (2, chat_id))
             db.commit()
             return {"status" : True}
         else:
