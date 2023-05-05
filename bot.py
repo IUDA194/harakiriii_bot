@@ -50,6 +50,23 @@ async def start_command(message : types.Message):
         await asyncio.sleep(2)
         await bot.send_message(message.from_user.id, "Если хочешь добавить меня в группу напиши моему создвтелю в лс, так же можешь сам склонить мой проект с гита", reply_markup=kb)
 
+@dp.message_handler(commands=['enter', 'ентер', "задать_чат"])
+async def start_command(message : types.Message):
+    if message.chat.type != "private":
+        a = await bot.get_chat_member(message.chat.id, message.from_user.id)
+        if a['status'] == "creator":
+            if not DataBase.select_chat(message.chat.id)["status"]:
+                DataBase.insert_chat(message.chat.id, message.from_user.id)
+                await bot.send_message(message.chat.id, f"""<b>Бум!</b>\n<i>harakiriii зарегестрировал ваш сервер</i>\n<i>У всех учасников чата создан аккаунт в системе бота</i><code> /start</code> <i>в личку боту для его открытия</i>
+    Имя чата в памяти бота {message.chat.id} <i>Вы всегда можете сменить его личнов кабинете</i>""")
+            else:
+                await bot.send_message(message.chat.id, "Бот уже зареган")
+        else:
+            await bot.send_message(message.chat.id, "Эту команду должен вводить только владелец чата")
+        await message.delete()
+    elif message.chat.type == "private":    
+        await bot.send_message(message.chat.id, "Эту команду нужно написать в группе которую хочешь подключить к боту")
+
 @dp.message_handler(commands=['admin'])
 async def start_command(message : types.Message):
     if message.chat.type == "private":
@@ -126,9 +143,10 @@ async def start_command(message : types.Message, state: FSMContext):
 async def anti_flood(*args, **kwargs):
     message = args[0] 
     message : types.Message
-    dt = datetime.datetime.now() + datetime.timedelta(minutes=15) 
-    await bot.restrict_chat_member(message.chat.id, message.from_user.id, types.ChatPermissions(False), until_date = dt)
-    await message.reply("Нахуй флудить | Мут на 15 минут")
+    if message.chat.type != "private":
+        dt = datetime.datetime.now() + datetime.timedelta(minutes=5) 
+        await bot.restrict_chat_member(message.chat.id, message.from_user.id, types.ChatPermissions(False), until_date = dt)
+        await message.reply("Нахуй флудить | Мут на 5 минут")
 
 
 @dp.message_handler(content_types=ContentType.ANIMATION)
@@ -137,24 +155,27 @@ async def start_command(message : types.Message):
     if user_chat_data['status'] != "creator" and user_chat_data['status'] != "administrator":
         us_data = DataBase.select_user(message.from_user.id)
         if len(us_data) >= 1:
-            if us_data["data"]["last_text"] == "GIF":
+            if us_data["data"]["last_text"] == "GIF1":
                 dt = datetime.datetime.now() + datetime.timedelta(hours=1) 
                 await bot.restrict_chat_member(message.chat.id, message.from_user.id, types.ChatPermissions(False), until_date = dt)
                 await message.reply("Нахуй гифки | Мут на час")
+            if us_data["data"]["last_text"] == "GIF":
+                dt = datetime.datetime.now() + datetime.timedelta(hours=1) 
+                DataBase.update_last_text(message.from_user.id, "GIF1")
             else:
                 DataBase.update_last_text(message.from_user.id, "GIF")
 
 @dp.message_handler()
-@dp.throttled(anti_flood, rate=0.5) #rate это количество секунд, при котором входящие сообщения считаются флудом.
+@dp.throttled(anti_flood, rate=0.7) #rate это количество секунд, при котором входящие сообщения считаются флудом.
 async def start_command(message : types.Message):
     if message.chat.type != "private":
         user_chat_data = await bot.get_chat_member(message.chat.id, message.from_user.id)
         if user_chat_data['status'] != "creator" and user_chat_data['status'] != "administrator":
-            if len(message.text) <= 5:
-                await message.reply(f"@{message.from_user.username} У тебя что налог на буквы? | Отдохни 30 секунд")
-                dt = datetime.datetime.now() + datetime.timedelta(seconds=30)  
-                await bot.restrict_chat_member(message.chat.id, message.from_user.id, types.ChatPermissions(False), until_date = dt)
-                await message.delete()
+            # if len(message.text) <= 5:
+            #     await message.reply(f"@{message.from_user.username} У тебя что налог на буквы? | Отдохни 30 секунд")
+            #     dt = datetime.datetime.now() + datetime.timedelta(seconds=30)  
+            #     await bot.restrict_chat_member(message.chat.id, message.from_user.id, types.ChatPermissions(False), until_date = dt)
+            #     await message.delete()
             try:
                 us_data = DataBase.select_user(message.from_user.id)
                 if len(us_data) >= 1:
@@ -177,7 +198,7 @@ async def start_command(message : types.Message):
                         DataBase.update_rep(message.from_user.id, 1)
                         DataBase.update_last_text(message.from_user.id, message.text)
                 else:
-                    DataBase.insert_user(message.from_user.id)
+                    DataBase.insert_user(chat_id = message.from_user.id, name=message.from_user.first_name)
                     ban_woeds = DataBase.select_ban_word()
                     for i in ban_woeds['ban_words']:
                         if i[0] in message.text:
